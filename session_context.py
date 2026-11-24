@@ -1,6 +1,6 @@
 class SessionContext:
 
-    def __init__(self, session_ctx):
+    def __init__(self):
         self.session_ctx = []
 
     async def get_session_ctx(self):

@@ -19,4 +19,10 @@ class LLM:
         response = await self.openai_client.chat.completions.create(model=self.model, messages=messages)
         return response
 
+    async def streaming_response(self, messages: list):
+        stream = await self.openai_client.chat.completions.create(model=self.model, messages=messages, stream=True)
+        return stream
+
+
+
 llm = LLM(data["base_url"], data["model"])

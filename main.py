@@ -2,6 +2,7 @@
 import asyncio
 import tomllib
 from llm import LLM
+from session_context import SessionContext
 
 #load_config
 with open("config.toml", "rb") as f:
@@ -9,36 +10,39 @@ with open("config.toml", "rb") as f:
 
 llm = LLM(base_url=data["base_url"], model=data["model"])
 
-messages = [
-    {
-        "role": "system",
-        "content": "You are helpful assistant"
+session_ctx = SessionContext()
 
-    },
-    {
-        "role": "user",
-        "content": "Меня зовут Алекс"
-    }
-]
 
 async def main():
-    result = await llm.response(messages)
-    print(result.choices[0].message.content)
-    messages.append(
-        {
-            "role": "assistant",
-            "content": result.choices[0].message.content
-        })
 
-    messages.append(
-        {
-            "role": "user",
-            "content": "Как меня зовут ?"
-        })
+    await session_ctx.add_ctx_block(role="system", content="You are helpful assistant")
 
-    result = await llm.response(messages)
-    print(result.choices[0].message.content)
+    while True:
+        user_prompt =  input("Enter your command:")
+        model_response = ""
+
+        await session_ctx.add_ctx_block(content=user_prompt, role="user")
+
+        stream = await llm.streaming_response(await session_ctx.get_session_ctx())
+
+        async for chunk in stream:
+            if chunk.choices:
+                model_response += chunk.choices[0].delta.content or ""
+
+
+
+                print(chunk.choices[0].delta.content or "", end="", flush=True)
+
+            if chunk.usage:
+                print("\n", chunk.usage)
+
+        await session_ctx.add_ctx_block(role="assistant", content=model_response)
+
+        print(await session_ctx.get_session_ctx())
+
+
+
+
 
 if __name__ == "__main__":
     asyncio.run(main())
-
